@@ -459,12 +459,12 @@ class DVSQ(object):
 
     def initial_centers(self, img_output):
         C_init = np.zeros([self.subspace_num * self.subcenter_num, self.output_dim])
-        print "#DVSQ train# initilizing Centers"
+        print("#DVSQ train# initilizing Centers")
         all_output = img_output
-        for i in xrange(self.subspace_num):
+        for i in range(self.subspace_num):
             kmeans = MiniBatchKMeans(n_clusters=self.subcenter_num).fit(all_output[:, i * self.output_dim / self.subspace_num: (i + 1) * self.output_dim / self.subspace_num])
             C_init[i * self.subcenter_num: (i + 1) * self.subcenter_num, i * self.output_dim / self.subspace_num: (i + 1) * self.output_dim / self.subspace_num] = kmeans.cluster_centers_
-            print "step: ", i, " finish"
+            print("step: ", i, " finish")
         return C_init
 
     def update_centers(self, img_dataset):
@@ -495,10 +495,10 @@ class DVSQ(object):
         C_value[C_zeros_ids, :] = old_C_value[C_zeros_ids, :]
         self.sess.run(self.C.assign(C_value))
 
-        print 'updated C is:'
-        print C_value
-        print "non zeros:"
-        print len(np.where(np.sum(C_value, 1) != 0)[0])
+        print('updated C is:')
+        print(C_value)
+        print("non zeros:")
+        print(len(np.where(np.sum(C_value, 1) != 0)[0]))
 
     def update_codes_ICM(self, output, code):
         '''
@@ -514,7 +514,7 @@ class DVSQ(object):
 
         code = np.zeros(code.shape)
         
-        for iterate in xrange(self.max_iter_update_b):
+        for iterate in range(self.max_iter_update_b):
             start = time.time()
             time_init = 0.0
             time_compute_centers = 0.0
@@ -538,29 +538,29 @@ class DVSQ(object):
         update codes in batch size
         '''
         total_batch = int(ceil(dataset.n_samples / batch_size))
-        print "start update codes in batch size ", batch_size
+        print ("start update codes in batch size ", batch_size)
 
         dataset.finish_epoch()
         
-        for i in xrange(total_batch):
-            print "Iter ", i, "of ", total_batch
+        for i in range(total_batch):
+            print ("Iter ", i, "of ", total_batch)
             output_val, code_val = dataset.next_batch_output_codes(batch_size)
-            print output_val, code_val
+            print (output_val, code_val)
             codes_val = self.update_codes_ICM(output_val, code_val)
-            print np.sum(np.sum(codes_val, 0) != 0)
+            print (np.sum(np.sum(codes_val, 0) != 0))
             dataset.feed_batch_codes(batch_size, codes_val)
 
-        print "update_code wrong:"
-        print np.sum(np.sum(dataset.codes, 1) != 4)
+        print("update_code wrong:")
+        print(np.sum(np.sum(dataset.codes, 1) != 4))
         
-        print "######### update codes done ##########"
+        print("######### update codes done ##########")
 
     def train_dvsq(self, img_dataset):
         print ("%s #train# start training" % datetime.now())
         epoch = 0
         epoch_iter = int(ceil(img_dataset.n_samples / self.batch_size))
         
-        for train_iter in xrange(self.max_iter):
+        for train_iter in range(self.max_iter):
             images, labels, codes = img_dataset.next_batch(self.batch_size)
             start_time = time.time()
             
@@ -581,14 +581,14 @@ class DVSQ(object):
             if train_iter % (2*epoch_iter) == 0 and train_iter != 0:
                 if epoch == 0:
                     with tf.device(self.device):
-                        for i in xrange(self.max_iter_update_Cb):
-                            print "#DVSQ Train# initialize centers in ", i, " iter"
+                        for i in range(self.max_iter_update_Cb):
+                            print("#DVSQ Train# initialize centers in ", i, " iter")
                             self.sess.run(self.C.assign(self.initial_centers(img_dataset.output)))
                             
-                        print "#DVSQ Train# initialize centers done!!!"
+                        print ("#DVSQ Train# initialize centers done!!!")
                 epoch = epoch + 1
-                for i in xrange(self.max_iter_update_Cb):
-                    print "#DVSQ Train# update codes and centers in ", i, " iter"
+                for i in range(self.max_iter_update_Cb):
+                    print ("#DVSQ Train# update codes and centers in ", i, " iter")
                     self.update_codes_batch(img_dataset, self.code_batch_size)
                     self.update_centers(img_dataset)
             
@@ -604,7 +604,7 @@ class DVSQ(object):
         epoch = 0
         epoch_iter = int(ceil(img_dataset.n_samples / self.batch_size))
         
-        for train_iter in xrange(self.max_iter):
+        for train_iter in range(self.max_iter):
             images, labels, codes = img_dataset.next_batch(self.batch_size)
             start_time = time.time()
             
@@ -624,8 +624,8 @@ class DVSQ(object):
             # every epoch: update codes and centers
             if train_iter % (2*epoch_iter) == 0 and train_iter != 0:
                 epoch = epoch + 1
-                for i in xrange(self.max_iter_update_Cb):
-                    print "#DVSQ Train# update codes and centers in ", i, " iter"
+                for i in range(self.max_iter_update_Cb):
+                    print ("#DVSQ Train# update codes and centers in ", i, " iter")
                     # use kmeans to generate centers for each subspace
                     self.sess.run(self.C.assign(self.initial_centers(img_dataset.output)))
                     self.update_codes_batch(img_dataset, self.code_batch_size)

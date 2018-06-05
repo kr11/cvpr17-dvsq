@@ -1,11 +1,12 @@
 #          lr output iter gpu console
 # train.sh 0.01 300 5000 0.1 3 4 0.7 100 0 (1)
-import numpy as np
-import scipy.io as sio
+print("qewdas")
 import warnings
 import dataset
 import net as model
 import sys
+print("hello")
+sys.argv = ["", "0.005", "300", "5000", "0.0001", "4", "0.0", "81", "2"]
 
 warnings.filterwarnings("ignore", category = DeprecationWarning)
 warnings.filterwarnings("ignore", category = FutureWarning)
@@ -74,6 +75,6 @@ config = {
 import time
 t = time.time()
 train_img = dataset.import_train(config)
-print time.time() - t
+print(time.time() - t)
 
 model_dq = model.train_pq(train_img, config)

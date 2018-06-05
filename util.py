@@ -12,7 +12,7 @@ class ProgressBar:
         sys.stdout.write(' ' * (self.width + 9) + '\r')
         sys.stdout.flush()
         if s:
-            print s
+            print(s)
         progress = self.width * self.count / self.total
         sys.stdout.write('{0:3}/{1:3}:\t'.format(self.count, self.total))
         sys.stdout.write('#' * progress + '-' * (self.width - progress) + '\r')
@@ -23,7 +23,7 @@ class ProgressBar:
     
 class Dataset(object):
     def __init__(self, dataset, output_dim, code_dim):
-        print ("Initializing Dataset")
+        print("Initializing Dataset")
         self._dataset = dataset
         self.n_samples = dataset.n_samples
         self._train = dataset.train
@@ -34,7 +34,7 @@ class Dataset(object):
         np.random.shuffle(self._perm)
         self._index_in_epoch = 0
         self._epochs_complete = 0
-        print ("Dataset already")
+        print("Dataset already")
         return
 
     def next_batch(self, batch_size):
@@ -128,21 +128,21 @@ def get_allrel(args):
     return _get_allrel(*args)
 
 def _get_allrel(dis, database_codes, query_codes, offset):
-    print 'getting relations of: ', offset
+    print('getting relations of: ', offset)
     all_rel = np.zeros([query_codes.shape[0], database_codes.shape[0]])
-    for i in xrange(query_codes.shape[0]):
-        for j in xrange(database_codes.shape[0]):
+    for i in range(query_codes.shape[0]):
+        for j in range(database_codes.shape[0]):
             A1 = np.where(query_codes[i] == 1)[0]
             A2 = np.where(database_codes[j] == 1)[0]
             all_rel[i, j] = sum([dis[x][y] for x in A1 for y in A2])
         if i % 100 == 0:
-            print offset, ' reaching: ', i
-    print "allrel part ", offset
-    print all_rel
-    print "query codes wrong:"
-    print np.sum(np.sum(query_codes, 1) != 4)
-    print "database codes wrong:"
-    print np.sum(np.sum(database_codes, 1) != 4)
+            print(offset, ' reaching: ', i)
+    print("allrel part ", offset)
+    print(all_rel)
+    print("query codes wrong:")
+    print(np.sum(np.sum(query_codes, 1) != 4))
+    print("database codes wrong:")
+    print(np.sum(np.sum(database_codes, 1) != 4))
     return all_rel
 
 class MAPs:
@@ -161,9 +161,9 @@ class MAPs:
         APx = []
         query_labels = query.label
         database_labels = database.label
-        print "#calc mAPs# calculating mAPs"
+        print("#calc mAPs# calculating mAPs")
         bar = ProgressBar(total=self.all_rel.shape[0])
-        for i in xrange(self.all_rel.shape[0]):
+        for i in range(self.all_rel.shape[0]):
             label = query_labels[i, :]
             label[label == 0] = -1
             idx = ids[i, :]
@@ -174,7 +174,7 @@ class MAPs:
             if rel != 0:
                 APx.append(np.sum(Px * imatch) / rel)
             bar.move()
-        print "mAPs: ", np.mean(np.array(APx))
+        print("mAPs: ", np.mean(np.array(APx)))
         return np.mean(np.array(APx))
 
 class MAPs_CQ:
@@ -190,8 +190,8 @@ class MAPs_CQ:
         APx = []
         query_labels = query.label
         database_labels = database.label
-        #print "#calc mAPs# calculating mAPs"
-        for i in xrange(self.all_rel.shape[0]):
+        #print("#calc mAPs# calculating mAPs"
+        for i in range(self.all_rel.shape[0]):
             label = query_labels[i, :]
             label[label == 0] = -1
             idx = ids[i, :]
@@ -204,8 +204,8 @@ class MAPs_CQ:
             else:
                 APx.append(0.0)
             #if i % 100 == 0:
-                #print "step: ", i
-        print "SQD mAPs: ", np.mean(np.array(APx))
+                #print("step: ", i
+        print("SQD mAPs: ", np.mean(np.array(APx)))
         return np.mean(np.array(APx))
     
     def get_mAPs_AQD(self, database, query):
@@ -214,8 +214,8 @@ class MAPs_CQ:
         APx = []
         query_labels = query.label
         database_labels = database.label
-        #print "#calc mAPs# calculating AQD mAPs"
-        for i in xrange(self.all_rel.shape[0]):
+        #print("#calc mAPs# calculating AQD mAPs"
+        for i in range(self.all_rel.shape[0]):
             label = query_labels[i, :]
             label[label == 0] = -1
             idx = ids[i, :]
@@ -228,8 +228,8 @@ class MAPs_CQ:
             else:
                 APx.append(0.0)
             #if i % 100 == 0:
-                #print "step: ", i
-        print "AQD mAPs: ", np.mean(np.array(APx))
+                #print("step: ", i
+        print("AQD mAPs: ", np.mean(np.array(APx)))
         return np.mean(np.array(APx))
 
     def get_mAPs_by_feature(self, database, query):
@@ -238,8 +238,8 @@ class MAPs_CQ:
         APx = []
         query_labels = query.label
         database_labels = database.label
-        #print "#calc mAPs# calculating mAPs"
-        for i in xrange(self.all_rel.shape[0]):
+        #print("#calc mAPs# calculating mAPs"
+        for i in range(self.all_rel.shape[0]):
             label = query_labels[i, :]
             label[label == 0] = -1
             idx = ids[i, :]
@@ -252,6 +252,6 @@ class MAPs_CQ:
             else:
                 APx.append(0.0)
             #if i % 100 == 0:
-                #print "step: ", i
-        print "Feature mAPs: ", np.mean(np.array(APx))
+                #print("step: ", i)
+        print("Feature mAPs: ", np.mean(np.array(APx)))
         return np.mean(np.array(APx))
