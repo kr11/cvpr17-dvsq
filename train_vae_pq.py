@@ -3,19 +3,22 @@
 import numpy as np
 import scipy.io as sio
 import warnings
-import dataset
-import net as model
+
+import vae_data
+import vae_net
 import sys
+import util
 
-warnings.filterwarnings("ignore", category = DeprecationWarning)
-warnings.filterwarnings("ignore", category = FutureWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
+sys.argv = ["", "0.005", "300", "5000", "0.0001", "4", "0.0", "81", "2"]
 ### Define input arguments
 lr = float(sys.argv[1])
 output_dim = int(sys.argv[2])
 iter_num = int(sys.argv[3])
 cq_lambda = float(sys.argv[4])
-#update_b = int(sys.argv[5])
+# update_b = int(sys.argv[5])
 subspace_num = int(sys.argv[5])
 margin_param = float(sys.argv[6])
 part_label = int(sys.argv[7])
@@ -25,13 +28,13 @@ console = len(sys.argv) > 10
 
 config = {
     'device': '/gpu:' + gpu,
-    'gpu_usage': 11,#G
+    'gpu_usage': 11,  # G
     'max_iter': iter_num,
     'batch_size': 256,
-    'moving_average_decay': 0.9999,      # The decay to use for the moving average. 
-    'decay_step': 500,                   # Epochs after which learning rate decays.
-    'learning_rate_decay_factor': 0.5,   # Learning rate decay factor.
-    'learning_rate': lr,                 # Initial learning rate img.
+    'moving_average_decay': 0.9999,  # The decay to use for the moving average.
+    'decay_step': 500,  # Epochs after which learning rate decays.
+    'learning_rate_decay_factor': 0.5,  # Learning rate decay factor.
+    'learning_rate': lr,  # Initial learning rate img.
     'console_log': console,
 
     'output_dim': output_dim,
@@ -42,15 +45,15 @@ config = {
     'img_model': 'alexnet',
     'stage': 'train',
     'loss_type': 'cos_softmargin_multi_label',
-    
+
     'margin_param': margin_param,
     'wordvec_dict': "./data/nuswide_81/nuswide_wordvec.txt",
-    'part_ids_dict': "./data/nuswide_81/train_"+str(part_label)+"_ids.txt",
+    'part_ids_dict': "./data/nuswide_81/train_" + str(part_label) + "_ids.txt",
     'partlabel': part_label,
-    
+
     # only finetune last layer
     'finetune_all': True,
-    
+
     ## CQ params
     'max_iter_update_b': 3,
     'max_iter_update_Cb': 1,
@@ -59,7 +62,7 @@ config = {
     'n_subspace': subspace_num,
     'n_subcenter': 256,
 
-    'n_train': 10000 * (part_label/81),
+    'n_train': 10000 * (part_label / 81),
     'n_database': 218491,
     'n_query': 5000,
 
@@ -68,11 +71,29 @@ config = {
     'img_te': "./data/nuswide_81/test.txt",
     'img_db': "./data/nuswide_81/database.txt",
     'save_dir': "./",
+
+    # vae
+    'num_layers': 2,
+    'n_hidien': [128, 64]
 }
 
 import time
-t = time.time()
-train_img = dataset.import_train(config)
-print(time.time() - t)
 
-model_dq = model.train(train_img, config)
+t = time.time()
+# train_img = dataset.import_train(config)
+print(time.time() - t)
+dataset_dir = '/Users/kangrong/code/github/lopq/data'
+dataset_name = vae_data.Vector_Dataset.SIFT_SMALL
+is_train = True
+config['output_dim'] = 64
+config['vector_dim'] = 128
+config['batch_size'] = 2000
+
+
+# output_dim = 64
+# code_dim = 64
+model = vae_net.DVSQ(config)
+img_dataset = vae_data.Vector_Dataset(dataset_dir, dataset_name, is_train, config['output_dim'],
+                                      config['n_subspace'] * config['n_subcenter'], train_size=10000)
+model.train_pq(img_dataset)
+model_dq = model.save_dir

@@ -21,108 +21,108 @@ class ProgressBar:
         sys.stdout.flush()
         return
     
-class Dataset(object):
-    def __init__(self, dataset, output_dim, code_dim):
-        print("Initializing Dataset")
-        self._dataset = dataset
-        self.n_samples = dataset.n_samples
-        self._train = dataset.train
-        self._output = np.zeros((self.n_samples, output_dim), dtype=np.float32)
-        self._codes = np.zeros((self.n_samples, code_dim), dtype=np.float32)
-
-        self._perm = np.arange(self.n_samples)
-        np.random.shuffle(self._perm)
-        self._index_in_epoch = 0
-        self._epochs_complete = 0
-        print("Dataset already")
-        return
-
-    def next_batch(self, batch_size):
-        """
-        Args:
-          batch_size
-        Returns:
-          [batch_size, (n_inputs)]: next batch images
-          [batch_size, n_class]: next batch labels
-        """
-        start = self._index_in_epoch
-        self._index_in_epoch += batch_size
-        # Another epoch finish
-        if self._index_in_epoch > self.n_samples:
-            if self._train:
-                # Training stage need repeating get batch
-                self._epochs_complete += 1
-                # Shuffle the data
-                np.random.shuffle(self._perm)
-                # Start next epoch
-                start = 0
-                self._index_in_epoch = batch_size
-            else:
-                # Validation stage only process once
-                start = self.n_samples - batch_size
-                self._index_in_epoch = self.n_samples
-        end = self._index_in_epoch
-        
-        data, label = self._dataset.data(self._perm[start:end])
-        return (data, label, self.codes[self._perm[start: end], :])
-
-    def next_batch_output_codes(self, batch_size):
-        start = self._index_in_epoch
-        self._index_in_epoch += batch_size
-        # Another epoch finish
-        if self._index_in_epoch > self.n_samples:
-            if self._train:
-                # Shuffle the data
-                np.random.shuffle(self._perm)
-                # Start next epoch
-                start = 0
-                self._index_in_epoch = batch_size
-            else:
-                # Validation stage only process once
-                start = self.n_samples - batch_size
-                self._index_in_epoch = self.n_samples
-        end = self._index_in_epoch
-        
-        return (self.output[self._perm[start: end], :],
-                self.codes[self._perm[start: end], :])
-
-    def feed_batch_output(self, batch_size, output):
-        """
-        Args:
-          batch_size
-          [batch_size, n_output]
-        """
-        start = self._index_in_epoch - batch_size
-        end = self._index_in_epoch
-        self.output[self._perm[start:end], :] = output
-        return
-
-    def feed_batch_codes(self, batch_size, codes):
-        """
-        Args:
-          batch_size
-          [batch_size, n_output]
-        """
-        start = self._index_in_epoch - batch_size
-        end = self._index_in_epoch
-        self.codes[self._perm[start:end], :] = codes
-        return
-
-    @property
-    def output(self):
-        return self._output
-    
-    @property
-    def codes(self):
-        return self._codes
-
-    @property
-    def label(self):
-        return self._dataset.get_labels()
-    
-    def finish_epoch(self):
-        self._index_in_epoch = 0
-        np.random.shuffle(self._perm)
+# class Dataset(object):
+#     def __init__(self, dataset, output_dim, code_dim):
+#         print("Initializing Dataset")
+#         self._dataset = dataset
+#         self.n_samples = dataset.n_samples
+#         self._train = dataset.train
+#         self._output = np.zeros((self.n_samples, output_dim), dtype=np.float32)
+#         self._codes = np.zeros((self.n_samples, code_dim), dtype=np.float32)
+#
+#         self._perm = np.arange(self.n_samples)
+#         np.random.shuffle(self._perm)
+#         self._index_in_epoch = 0
+#         self._epochs_complete = 0
+#         print("Dataset already")
+#         return
+#
+#     def next_batch(self, batch_size):
+#         """
+#         Args:
+#           batch_size
+#         Returns:
+#           [batch_size, (n_inputs)]: next batch images
+#           [batch_size, n_class]: next batch labels
+#         """
+#         start = self._index_in_epoch
+#         self._index_in_epoch += batch_size
+#         # Another epoch finish
+#         if self._index_in_epoch > self.n_samples:
+#             if self._train:
+#                 # Training stage need repeating get batch
+#                 self._epochs_complete += 1
+#                 # Shuffle the data
+#                 np.random.shuffle(self._perm)
+#                 # Start next epoch
+#                 start = 0
+#                 self._index_in_epoch = batch_size
+#             else:
+#                 # Validation stage only process once
+#                 start = self.n_samples - batch_size
+#                 self._index_in_epoch = self.n_samples
+#         end = self._index_in_epoch
+#
+#         data, label = self._dataset.data(self._perm[start:end])
+#         return (data, label, self.codes[self._perm[start: end], :])
+#
+#     def next_batch_output_codes(self, batch_size):
+#         start = self._index_in_epoch
+#         self._index_in_epoch += batch_size
+#         # Another epoch finish
+#         if self._index_in_epoch > self.n_samples:
+#             if self._train:
+#                 # Shuffle the data
+#                 np.random.shuffle(self._perm)
+#                 # Start next epoch
+#                 start = 0
+#                 self._index_in_epoch = batch_size
+#             else:
+#                 # Validation stage only process once
+#                 start = self.n_samples - batch_size
+#                 self._index_in_epoch = self.n_samples
+#         end = self._index_in_epoch
+#
+#         return (self.output[self._perm[start: end], :],
+#                 self.codes[self._perm[start: end], :])
+#
+#     def feed_batch_output(self, batch_size, output):
+#         """
+#         Args:
+#           batch_size
+#           [batch_size, n_output]
+#         """
+#         start = self._index_in_epoch - batch_size
+#         end = self._index_in_epoch
+#         self.output[self._perm[start:end], :] = output
+#         return
+#
+#     def feed_batch_codes(self, batch_size, codes):
+#         """
+#         Args:
+#           batch_size
+#           [batch_size, n_output]
+#         """
+#         start = self._index_in_epoch - batch_size
+#         end = self._index_in_epoch
+#         self.codes[self._perm[start:end], :] = codes
+#         return
+#
+#     @property
+#     def output(self):
+#         return self._output
+#
+#     @property
+#     def codes(self):
+#         return self._codes
+#
+#     @property
+#     def label(self):
+#         return self._dataset.get_labels()
+#
+#     def finish_epoch(self):
+#         self._index_in_epoch = 0
+#         np.random.shuffle(self._perm)
 
 def get_allrel(args):
     return _get_allrel(*args)
@@ -153,7 +153,7 @@ class MAPs:
         return np.dot(a, b)
 
     def get_mAPs_by_feature(self, database, query):
-        ips = np.dot(query.output, database.output.T)
+        ips = np.dot(query.output_vectors, database.output_vectors.T)
         #norms = np.sqrt(np.dot(np.reshape(np.sum(query.output ** 2, 1), [query.n_samples, 1]), np.reshape(np.sum(database.output ** 2, 1), [1, database.n_samples])))
         #self.all_rel = ips / norms
         self.all_rel = ips
@@ -209,7 +209,7 @@ class MAPs_CQ:
         return np.mean(np.array(APx))
     
     def get_mAPs_AQD(self, database, query):
-        self.all_rel = np.dot(query.output, np.dot(database.codes, self.C).T)
+        self.all_rel = np.dot(query.output_vectors, np.dot(database.codes, self.C).T)
         ids = np.argsort(-self.all_rel, 1)
         APx = []
         query_labels = query.label
@@ -233,7 +233,7 @@ class MAPs_CQ:
         return np.mean(np.array(APx))
 
     def get_mAPs_by_feature(self, database, query):
-        self.all_rel = np.dot(query.output, database.output.T)
+        self.all_rel = np.dot(query.output_vectors, database.output_vectors.T)
         ids = np.argsort(-self.all_rel, 1)
         APx = []
         query_labels = query.label
