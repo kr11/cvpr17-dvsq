@@ -6,11 +6,11 @@ import numpy as np
 import scipy.io as sio
 import warnings
 
-import vae_data
-import vae_net
+import vae.vae_data as vae_data
+import vae.vae_net as vae_net
 import sys
 import util
-import vae_valid
+import vae.vae_valid as vae_valid
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -96,9 +96,10 @@ config['max_iter'] = 20
 data_train, data_base, data_query, data_gt = vae_data.load_dataset(dataset_dir, dataset_name, train_size=10000)
 
 #prepare config
+config['output_dim'] = data_train.shape[1]
 config['n_hidien'][-1] = config['output_dim']
 config['num_layers'] = len(config['n_hidien'])
-config['output_dim'] = data_train.shape[1]
+
 
 
 
@@ -115,7 +116,7 @@ train_dataset = vae_data.Vector_Dataset(data_train, is_train, config['output_dim
 model.train_pq(train_dataset)
 model_dq = model.save_dir
 
-output_weights, output_bias = model.load_vae_model()
+# output_weights, output_bias = model.load_vae_model()
 print("finished train!")
 train_time = time.time() - total_start_time
 

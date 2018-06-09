@@ -18,7 +18,7 @@ import random
 from util import ProgressBar, MAPs, MAPs_CQ
 from sklearn.cluster import MiniBatchKMeans
 
-from vae_data import Vector_Dataset
+from vae.vae_data import Vector_Dataset
 
 
 class DVSQ(object):
@@ -102,6 +102,7 @@ class DVSQ(object):
             self.decode_biases.append(tf.Variable(tf.random_normal([self.vector_dim])))
 
             self.output_dim = self.hidden_size[-1]
+            print("self.output_dim",self.output_dim)
             # self.output_vectors = tf.Variable(tf.float32, [self.batch_size, self.output_dim])
 
             self.C = tf.Variable(tf.random_uniform([self.subspace_num * self.subcenter_num, self.output_dim],
@@ -387,7 +388,8 @@ class DVSQ(object):
             b = self.sess.run(self.encode_biases[layer])
             output.append((w, b))
 
-        np.save(model_file, np.array(output))
+        # np.save(model_file, np.array(output))
+        print("warning: not save model!")
         return
 
     # Building the encoder

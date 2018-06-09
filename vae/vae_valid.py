@@ -6,7 +6,7 @@ import time
 from functools import reduce
 from itertools import chain, count
 
-from vae_utils import iterate_splits
+from vae.vae_utils import iterate_splits
 
 
 def parmap(f, X, nprocs=multiprocessing.cpu_count()):
