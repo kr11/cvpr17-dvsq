@@ -62,6 +62,23 @@ def load_gist_data(report, dataset_dir, train_size=None, base_size=None, query_s
     return data_train, data_base, data_query, data_gt
 
 
+def load_dataset(dataset_dir, dataset_name, train_size=None, base_size=None, query_size=None):
+    report = []
+    if dataset_name == Vector_Dataset.GIST:
+        data_train, data_base, data_query, data_gt = load_gist_data(report, dataset_dir, train_size, base_size,
+                                                                    query_size)
+    elif dataset_name == Vector_Dataset.DEEP1M:
+        data_train, data_base, data_query, data_gt = load_deep_data_1M(report, dataset_dir, train_size, base_size,
+                                                                       query_size)
+    elif dataset_name == Vector_Dataset.SIFT:
+        data_train, data_base, data_query, data_gt = load_sift_data(report, dataset_dir, train_size, base_size,
+                                                                    query_size)
+    elif dataset_name == Vector_Dataset.SIFT_SMALL:
+        data_train, data_base, data_query, data_gt = load_siftsmall_data(report, dataset_dir, train_size, base_size,
+                                                                         query_size)
+    else:
+        raise Exception("Unknown dataset type! %s" % dataset_name)
+    return data_train, data_base, data_query, data_gt
 # def test_data():
 #     vae_utils.test_utils()
 #     print("test_data")
@@ -73,7 +90,7 @@ class Vector_Dataset(object):
     CONV = 'CONV'
     SIFT_SMALL = 'SIFT_SMALL'
 
-    def __init__(self, dataset_dir, dataset_name, is_train, output_dim, code_dim, train_size=None, base_size=None, query_size=None):
+    def __init__(self, input_vectors, is_train, output_dim, code_dim):
         """
         Generally, output_dim == code_dim, even if for PQ, we let codebooks be one-block-hot vectors.
         :param dataset_dir:
@@ -86,26 +103,13 @@ class Vector_Dataset(object):
         :param query_size:
         """
         print("Initializing Dataset")
-        report = []
-        if dataset_name == self.GIST:
-            data_train, data_base, data_query, data_gt = load_gist_data(report, dataset_dir, train_size, base_size,
-                                                                        query_size)
-        elif dataset_name == self.DEEP1M:
-            data_train, data_base, data_query, data_gt = load_deep_data_1M(report, dataset_dir, train_size, base_size,
-                                                                           query_size)
-        elif dataset_name == self.SIFT:
-            data_train, data_base, data_query, data_gt = load_sift_data(report, dataset_dir, train_size, base_size,
-                                                                           query_size)
-        elif dataset_name == self.SIFT_SMALL:
-            data_train, data_base, data_query, data_gt = load_siftsmall_data(report, dataset_dir, train_size, base_size,
-                                                                           query_size)
-        else:
-            raise Exception("Unknown dataset type! %s" % dataset_name)
+
 
         # self._dataset = dataset
-        self.n_samples, self.vector_dim = data_train.shape
+        self.input_vectors = input_vectors
+        self.n_samples, self.vector_dim = input_vectors.shape
         self.is_train = is_train
-        self.data_train = data_train
+        self.data_train = input_vectors
         self.output_dim = output_dim
         self._output_vectors = np.zeros((self.n_samples, self.output_dim), dtype=np.float32)
         self._codes = np.zeros((self.n_samples, code_dim), dtype=np.float32)

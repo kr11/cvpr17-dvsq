@@ -6,6 +6,8 @@
 
 import os
 import sys
+
+import scipy
 import tensorflow as tf
 import numpy as np
 import scipy.io as sio
@@ -55,9 +57,9 @@ class DVSQ(object):
         # self.partlabel = config['partlabel']
         ### Format as 'path/to/save/dir/lr_{$0}_output_dim{$1}_iter_{$2}'
         self.save_dir = config['save_dir'] + self.loss_type + '_lr_' + str(self.learning_rate) + '_cqlambda_' + str(
-            self.cq_lambda) + '_subspace_' + str(self.subspace_num)  +\
-                          '_iter_' + str(self.max_iter) + '_output_' + str(self.vector_dim) + '_'
-                        # '_margin_' + str(self.margin_param) + '_partlabel_' + str(self.partlabel) +\
+            self.cq_lambda) + '_subspace_' + str(self.subspace_num) + \
+                        '_iter_' + str(self.max_iter) + '_output_' + str(self.vector_dim) + '_'
+        # '_margin_' + str(self.margin_param) + '_partlabel_' + str(self.partlabel) +\
 
         ### Setup session
         print("launching session")
@@ -108,13 +110,18 @@ class DVSQ(object):
                                                  name='b_img_for_loss')
             self.ICM_m = tf.placeholder(tf.int32, [], name='ICM_m')
             self.ICM_b_m = tf.placeholder(tf.float32, [None, self.subcenter_num], name='ICM_b_m')
+            self.ICM_X = tf.placeholder(tf.float32, [None, self.output_dim], name='ICM_X')
+            self.ICM_X_for_loss = tf.placeholder(tf.float32, [None, self.output_dim], name='ICM_X_for_loss')
             self.ICM_b_all_for_quan = tf.placeholder(tf.float32, [None, self.subcenter_num * self.subspace_num],
                                                      name='ICM_b_all_for_quan')
-            self.ICM_X = tf.placeholder(tf.float32, [self.batch_size, self.output_dim], name='ICM_X')
+            # self.ICM_X = tf.placeholder(tf.float32)
             self.ICM_C_m = tf.slice(self.C, [self.ICM_m * self.subcenter_num, 0], [self.subcenter_num, self.output_dim])
 
-            self.ICM_X_residual = tf.add(tf.subtract(self.ICM_X, tf.matmul(self.ICM_b_all_for_quan, self.C)),
+            # self.ICM_X_residual = tf.add(tf.matmul(self.ICM_b_all_for_quan, self.C),
+            #                              tf.matmul(self.ICM_b_m, self.ICM_C_m))
+            self.ICM_X_residual = tf.add(tf.subtract(self.ICM_X_for_loss, tf.matmul(self.ICM_b_all_for_quan, self.C)),
                                          tf.matmul(self.ICM_b_m, self.ICM_C_m))
+
             ICM_X_expand = tf.expand_dims(self.ICM_X_residual, 1)  # batch, 1, D
             ICM_C_m_expand = tf.expand_dims(self.ICM_C_m, 0)  # 1, |C|, D
             # N*sc*D  *  D*n
@@ -131,12 +138,25 @@ class DVSQ(object):
             self.sess.run(tf.initialize_all_variables())
         return
 
-    def load_model(self, img_model_weights):
-        if self.img_model == 'alexnet':
-            img_output = self.img_alexnet_layers(img_model_weights)
-        else:
-            raise Exception('cannot use such CNN model as ' + self.img_model)
-        return img_output
+    # def load_model(self, img_model_weights):
+    #     if self.img_model == 'alexnet':
+    #         img_output = self.img_alexnet_layers(img_model_weights)
+    #     else:
+    #         raise Exception('cannot use such CNN model as ' + self.img_model)
+    #     return img_output
+    def load_vae_model(self, model_file=None):
+        if model_file is None:
+            model_file = self.save_dir
+        saved_model = np.load(model_file + '.npy')
+        # output_weights = saved_model['encode_weights']
+        # output_bias = saved_model['encode_bias']
+        n_layer = len(saved_model)
+        output_weights = []
+        output_bias = []
+        for l in range(n_layer):
+            output_weights.append(saved_model[l][0])
+            output_bias.append(saved_model[l][1])
+        return output_weights, output_bias
 
     def img_alexnet_layers(self, model_weights):
         self.deep_param_img = {}
@@ -342,14 +362,32 @@ class DVSQ(object):
         ### Return outputs
         return self.fc8, self.fc8o, self.centers
 
-    def save_model(self, model_file=None):
+    # def save_model(self, model_file=None):
+    #     if model_file == None:
+    #         model_file = self.save_dir
+    #     model = {}
+    #     for layer in self.deep_param_img:
+    #         model[layer] = self.sess.run(self.deep_param_img[layer])
+    #     print("saving model to %s" % model_file)
+    #     np.save(model_file, np.array(model))
+    #     return
+
+    def save_vae_model(self, model_file=None):
         if model_file == None:
             model_file = self.save_dir
-        model = {}
-        for layer in self.deep_param_img:
-            model[layer] = self.sess.run(self.deep_param_img[layer])
+        # model = {}
+        # for layer in self.deep_param_img:
+        #     model[layer] = self.sess.run(self.deep_param_img[layer])
         print("saving model to %s" % model_file)
-        np.save(model_file, np.array(model))
+        # output_weights = {}
+        # output_bias = {}
+        output = []
+        for layer in range(0, self.num_layers):
+            w = self.sess.run(self.encode_weights[layer])
+            b = self.sess.run(self.encode_biases[layer])
+            output.append((w, b))
+
+        np.save(model_file, np.array(output))
         return
 
     # Building the encoder
@@ -400,7 +438,7 @@ class DVSQ(object):
             output_dim_start = int(i * self.output_dim / self.subspace_num)
             output_dim_end = int((i + 1) * self.output_dim / self.subspace_num)
             subcenter_num_start = int(i * self.subcenter_num)
-            subcenter_num_end = int((i+1) * self.subcenter_num)
+            subcenter_num_end = int((i + 1) * self.subcenter_num)
             kmeans = MiniBatchKMeans(n_clusters=self.subcenter_num).fit(all_output[:, output_dim_start: output_dim_end])
             C_init[subcenter_num_start: subcenter_num_end, output_dim_start:output_dim_end] = kmeans.cluster_centers_
             print("step: ", i, " finish")
@@ -439,7 +477,7 @@ class DVSQ(object):
         print("non zeros:")
         print(len(np.where(np.sum(C_value, 1) != 0)[0]))
 
-    def update_codes_ICM(self, output, code):
+    def update_codes_ICM(self, output, code=None):
         '''
         Optimize:
             min || output - self.C * codes ||
@@ -450,22 +488,22 @@ class DVSQ(object):
                 [C_1, C_2, ... C_M]
             codes: [n_train, n_subspace * n_subcenter]
         '''
-
-        code = np.zeros(code.shape)
+        if code is not None:
+            code = np.zeros(code.shape)
+        else:
+            code = np.zeros((self.batch_size, self.subspace_num * self.subcenter_num))
 
         for iterate in range(self.max_iter_update_b):
             sub_list = [i for i in range(self.subspace_num)]
             random.shuffle(sub_list)
             for m in sub_list:
-                temp = np.zeros([self.batch_size, self.output_dim], dtype=float)
+                # temp = np.zeros([self.batch_size, self.output_dim], dtype=np.float32)
                 best_centers_one_hot_val = self.sess.run(self.ICM_best_centers_one_hot, feed_dict={
                     self.ICM_b_m: code[:, m * self.subcenter_num: (m + 1) * self.subcenter_num],
                     self.ICM_b_all_for_quan: code,
                     self.ICM_m: m,
-                    self.ICM_X: output,
-
+                    self.ICM_X_for_loss: output,
                 })
-
                 code[:, m * self.subcenter_num: (m + 1) * self.subcenter_num] = best_centers_one_hot_val
         return code
 
@@ -488,6 +526,26 @@ class DVSQ(object):
 
         print("update_code wrong:")
         print(np.sum(np.sum(dataset.codes, 1) != 4))
+
+        print("######### update codes done ##########")
+
+    def update_base_codes_batch(self, base_data, batch_size):
+        '''
+        update codes in batch size
+        '''
+        base_size = len(base_data)
+        total_batch = int(ceil(base_size / batch_size))
+        print("start update codes in batch size ", batch_size)
+
+        # dataset.finish_epoch()
+
+        for i in range(total_batch):
+            print("Iter ", i, "of ", total_batch)
+            output_val = base_data[i * batch_size:(i + 1) * batch_size]
+            # output_val, code_val = dataset.next_base_batch_output_codes(batch_size)
+            codes_val = self.update_codes_ICM(output_val)
+            print(np.sum(np.sum(codes_val, 0) != 0))
+            dataset.feed_base_batch_codes(batch_size, codes_val)
 
         print("######### update codes done ##########")
 
@@ -574,8 +632,24 @@ class DVSQ(object):
                 datetime.now(), train_iter + 1, lr, cos_loss, cq_loss, duration))
 
         print("%s #traing# finish training" % datetime.now())
-        self.save_model()
+        self.save_vae_model()
         print("model saved")
+
+    def transform_vector_to_output(self, data):
+        output = self.sess.run(self.encoder(data))
+        return output
+
+    def transform_centers_to_pq(self):
+        # [self.subspace_num * self.subcenter_num, self.output_dim]
+        split_C = []
+        npC = self.sess.run(self.C)
+        for i in range(self.subspace_num):
+            output_dim_start = int(i * self.output_dim / self.subspace_num)
+            output_dim_end = int((i + 1) * self.output_dim / self.subspace_num)
+            subcenter_num_start = int(i * self.subcenter_num)
+            subcenter_num_end = int((i + 1) * self.subcenter_num)
+            split_C.append(npC[subcenter_num_start: subcenter_num_end, output_dim_start: output_dim_end])
+        return split_C
 
 
 def train(train_img, config):

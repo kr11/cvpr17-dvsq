@@ -585,7 +585,7 @@ class DVSQ(object):
         print ("%s #validation# totally %d query in %d batches" % (datetime.now(), img_query.n_samples, query_batch))
         if self.console_log:
             bar = ProgressBar(total=query_batch)
-        for i in xrange(query_batch):
+        for i in range(query_batch):
             images, labels, codes = img_query.next_batch(self.batch_size)
 
             output, loss = self.sess.run([self.img_last_layer, self.cos_loss],

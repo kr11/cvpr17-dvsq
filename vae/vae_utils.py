@@ -15,9 +15,9 @@ def iterate_splits(x, splits):
     :returns (np.array, int):
         subvector, split index pairs
     """
-    split_size = len(x) / splits
+    split_size = int(len(x) / splits)
     for split in range(splits):
-        start = split * split_size
+        start = int(split * split_size)
         yield x[start:start + split_size], split
 
 
